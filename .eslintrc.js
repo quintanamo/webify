@@ -6,9 +6,9 @@ module.exports = {
     es2021: true,
   },
   extends: [
-    'eslint:recommended',
     'plugin:vue/vue3-recommended',
-    'plugin:prettier/recommended',
+    'plugin:prettier/recommended', // enables prettier rules
+    'prettier', // turns off ESLint formatting
   ],
   parserOptions: {
     ecmaVersion: 2021,
