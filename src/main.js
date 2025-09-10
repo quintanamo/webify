@@ -1,7 +1,10 @@
-import { app, BrowserWindow } from 'electron';
+/* eslint-disable no-undef */
+import { app, BrowserWindow, protocol, ipcMain, dialog } from 'electron';
+import fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-
+import mime from 'mime';
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -11,10 +14,42 @@ const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
+    minWidth: 800,
     height: 600,
+    minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+  });
+
+  // handler for file dialog
+  ipcMain.handle('dialog:openFiles', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        {
+          name: 'Images',
+          extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'svg'],
+        },
+      ],
+    });
+
+    if (result.canceled) return [];
+
+    const tempDir = path.join(app.getPath('temp'), 'UploadedImages');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const copiedFiles = [];
+    for (const filePath of result.filePaths) {
+      const fileName = path.basename(filePath);
+      const destPath = path.join(tempDir, fileName);
+      fs.copyFileSync(filePath, destPath);
+      copiedFiles.push(destPath);
+    }
+
+    return copiedFiles;
   });
 
   // and load the index.html of the app.
@@ -32,6 +67,21 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  protocol.handle('webify', async (request) => {
+    const url = new URL(request.url);
+    const filePath = decodeURIComponent(url.pathname);
+
+    try {
+      const data = await fsp.readFile(filePath);
+      const mimeType = mime.getType(filePath) || 'application/octet-stream';
+      return new Response(data, {
+        headers: { 'Content-Type': mimeType },
+      });
+    } catch (err) {
+      console.error('Failed to load:', filePath, err);
+      return new Response('File not found', { status: 404 });
+    }
+  });
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the
