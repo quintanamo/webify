@@ -13,6 +13,11 @@ button {
 .icon {
   width: 16rem;
   height: 16rem;
+
+  &--small {
+    width: 4rem;
+    height: 4rem;
+  }
 }
 
 ul {
@@ -23,36 +28,50 @@ ul {
 }
 
 li {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
   height: 4.8rem;
+  width: 4.8rem;
 
   & img {
-    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    box-shadow: 0.2rem 0.2rem 0.6rem rgba(0, 0, 0, 0.35);
   }
 }
 </style>
 
 <template>
-  <button @click="openFileDialog()">
+  <button v-if="!hasImages" @click="openFileDialog()">
     <v-icon class="icon" name="fa-file-upload" />
     <span>Browse Files to Add</span>
   </button>
-  <ul v-if="files.length > 0">
-    <li v-bind:key="{ index }" v-for="(file, index) in files">
+  <ul v-if="hasImages">
+    <li v-bind:key="{ index }" v-for="(file, index) in imageStore.images">
       <img :src="'webify://' + encodeURI(file)" :alt="file.split('/').at(-1)" />
+    </li>
+    <li>
+      <button @click="openFileDialog()">
+        <v-icon class="icon--small" name="fa-file-upload" />
+      </button>
     </li>
   </ul>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { useImageStore } from '../store/images';
 
-const files = ref([]);
+const imageStore = useImageStore();
+const hasImages = computed(() => imageStore.images.length > 0);
 
 async function openFileDialog() {
   try {
     const selectedFiles = await window.electronAPI.openFiles();
-    files.value = selectedFiles;
-    console.log(files.value);
+    imageStore.addImages(selectedFiles);
   } catch (error) {
     console.error('Failed to open file dialog:', error);
   }

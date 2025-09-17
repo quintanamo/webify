@@ -5,6 +5,7 @@ import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import mime from 'mime';
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();

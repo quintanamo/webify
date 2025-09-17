@@ -46,6 +46,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "mime": "^4.0.7",
     "oh-vue-icons": "^1.0.0-rc3",
+    "pinia": "^3.0.3",
     "vue": "^3.5.20"
   }
 }
